@@ -3,7 +3,7 @@
 %define _binaries_in_noarch_packages_terminate_build   0
 %global _firmwarepath  /usr/lib/firmware
 
-%global sof_ver 2.2.4
+%global sof_ver 2.2.5
 #global sof_ver_pre rc2
 %global sof_ver_rel %{?sof_ver_pre:.%{sof_ver_pre}}
 %global sof_ver_pkg v%{sof_ver}%{?sof_ver_pre:-%{sof_ver_pre}}
@@ -104,6 +104,9 @@ cat alsa-sof-firmware.files
 %files debug -f alsa-sof-firmware.debug-files
 
 %changelog
+* Mon May 15 2023 Jaroslav Kysela <perex@perex.cz> - 2.2.5-1
+- Update to v2.2.5
+
 * Mon Jan  9 2023 Jaroslav Kysela <perex@perex.cz> - 2.2.4-2
 - Update to v2.2.4
 
