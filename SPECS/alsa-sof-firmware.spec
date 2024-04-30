@@ -4,10 +4,11 @@
 %global _firmwarepath  /usr/lib/firmware
 %global _xz_opts -9 --check=crc32
 
-%global sof_ver 2.2.5
-#global sof_ver_pre rc2
+%global sof_ver 2023.12
+#global sof_ver_pre rc1
 %global sof_ver_rel %{?sof_ver_pre:.%{sof_ver_pre}}
-%global sof_ver_pkg v%{sof_ver}%{?sof_ver_pre:-%{sof_ver_pre}}
+%global sof_ver_pkg0 %{sof_ver}%{?sof_ver_pre:-%{sof_ver_pre}}
+%global sof_ver_pkg v%{sof_ver_pkg0}
 
 %global with_sof_addon 0
 %global sof_ver_addon 0
@@ -17,17 +18,17 @@
 Summary:        Firmware and topology files for Sound Open Firmware project
 Name:           alsa-sof-firmware
 Version:        %{sof_ver}
-Release:        2%{?sof_ver_rel}%{?dist}
+Release:        1%{?sof_ver_rel}%{?dist}
 # See later in the spec for a breakdown of licensing
-License:        BSD
+License:        BSD-3-Clause
 URL:            https://github.com/thesofproject/sof-bin
-Source:         https://github.com/thesofproject/sof-bin/releases/download/%{sof_ver_pkg}/sof-bin-%{sof_ver_pkg}.tar.gz
+Source:         https://github.com/thesofproject/sof-bin/releases/download/%{sof_ver_pkg}/sof-bin-%{sof_ver_pkg0}.tar.gz
 %if 0%{?with_sof_addon}
 Source2:        https://github.com/thesofproject/sof-bin/releases/download/v%{sof_ver_addon}/sof-tplg-v%{sof_ver_addon}.tar.gz
 %endif
-Source10:       sof-rpl-rt711-l0-rt1316-l12-rt714-l3.tplg.gz
 BuildRequires:  alsa-topology >= %{tplg_version}
 BuildRequires:  alsa-topology-utils >= %{tplg_version}
+Conflicts:      alsa-firmware <= 1.2.1-6
 
 # noarch, since the package is firmware
 BuildArch:      noarch
@@ -44,15 +45,13 @@ License:        BSD
 This package contains the debug files for the Sound Open Firmware project.
 
 %prep
-%autosetup -n sof-bin-%{sof_ver_pkg}
+%autosetup -n sof-bin-%{sof_ver_pkg0}
 
-mkdir -p firmware/intel/sof
+mkdir -p firmware/intel
 
-# we have the version in the package name
-mv sof-%{sof_ver_pkg}/* firmware/intel/sof
-
-# move topology files
-mv sof-tplg-%{sof_ver_pkg} firmware/intel/sof-tplg
+for d in sof sof-ipc4 sof-ace-tplg sof-tplg; do \
+  mv "${d}" firmware/intel; \
+done
 
 %if 0%{?with_sof_addon}
 tar xvzf %{SOURCE2}
@@ -60,28 +59,29 @@ mv sof-tplg-v%{sof_ver_addon}/*.tplg firmware/intel/sof-tplg
 %endif
 
 # remove NXP firmware files
-rm LICENCE.NXP
+rm Notice.NXP LICENCE.NXP
 rm -rf firmware/intel/sof-tplg/sof-imx8*
 
 # remove Mediatek firmware files
 rm -rf firmware/intel/sof-tplg/sof-mt8*
 
-# Extra topology for Dell SKU 0BDA
-zcat %{SOURCE10} > firmware/intel/sof-tplg/$(basename %{SOURCE10} .gz)
-chmod 0644 firmware/intel/sof-tplg/$(basename %{SOURCE10} .gz)
-
 # use xz compression
-find -P firmware/intel/sof -type f -name "*.ri" -exec xz -z %{_xz_opts} {} \;
-for f in $(find -P firmware/intel/sof -type l -name "*.ri"); do \
-  l=$(readlink "${f}"); \
-  d=$(dirname "${f}"); \
-  b=$(basename "${f}"); \
-  rm "${f}"; \
-  pushd "${d}"; \
-  ln -svf "${l}.xz" "${b}.xz"; \
-  popd; \
+xz -z %{_xz_opts} manifest.txt
+for d in sof sof-ipc4; do \
+  find -P "firmware/intel/${d}" -type f -name "*.ri" -exec xz -z %{_xz_opts} {} \;
+  for f in $(find -P "firmware/intel/${d}" -type l -name "*.ri"); do \
+    l=$(readlink "${f}"); \
+    n=$(dirname "${f}"); \
+    b=$(basename "${f}"); \
+    rm "${f}"; \
+    pushd "${n}"; \
+    ln -svf "${l}.xz" "${b}.xz"; \
+    popd; \
+  done
 done
-find -P firmware/intel/sof-tplg  -type f -name "*.tplg" -exec xz -z %{_xz_opts} {} \;
+for d in sof-tplg sof-ace-tplg; do \
+  find -P "firmware/intel/${d}"  -type f -name "*.tplg" -exec xz -z %{_xz_opts} {} \;
+done
 
 %build
 # SST topology files (not SOF related, but it's a Intel hw support
@@ -99,7 +99,7 @@ cp -ra firmware/* %{buildroot}%{_firmwarepath}
 # gather files and directories
 FILEDIR=$(pwd)
 pushd %{buildroot}/%{_firmwarepath}
-find -P . -name "*.ri.xz" | sed -e '/^.$/d' > $FILEDIR/alsa-sof-firmware.files
+find -P . -name "*.ri.xz" | sed -e '/^.$/d' >> $FILEDIR/alsa-sof-firmware.files
 #find -P . -name "*.tplg" | sed -e '/^.$/d' >> $FILEDIR/alsa-sof-firmware.files
 find -P . -name "*.ldc" | sed -e '/^.$/d' > $FILEDIR/alsa-sof-firmware.debug-files
 find -P . -type d | sed -e '/^.$/d' > $FILEDIR/alsa-sof-firmware.dirs
@@ -112,6 +112,7 @@ cat alsa-sof-firmware.files
 %files -f alsa-sof-firmware.files
 %license LICENCE*
 %doc README*
+%doc manifest.txt.xz
 %dir %{_firmwarepath}
 
 # Licence: 3-clause BSD
@@ -120,6 +121,7 @@ cat alsa-sof-firmware.files
 # Licence: 3-clause BSD
 # .. for files with suffix .tplg
 %{_firmwarepath}/intel/sof-tplg/*.tplg.xz
+%{_firmwarepath}/intel/sof-ace-tplg/*.tplg.xz
 
 # Licence: SOF (3-clause BSD plus others)
 # .. for files with suffix .ri
@@ -134,9 +136,18 @@ if st and st.type == "link" then
 end
 
 %changelog
-* Fri Jun 30 2023 Jaroslav Kysela <perex@perex.cz> - 2.2.5-2
+* Wed Dec  20 2023 Jaroslav Kysela <perex@perex.cz> - 2023.12-1
+- Update to v2023.12
+
+* Thu Nov  16 2023 Jaroslav Kysela <perex@perex.cz> - 2023.09.2-1
+- Update to v2023.09.2
+- SPDX license
+
+* Thu Jun 15 2023 Jaroslav Kysela <perex@perex.cz> - 2.2.5-2
 - add sof-rpl-rt711-l0-rt1316-l12-rt714-l3.tplg for Dell SKU 0BDA
 - add xz compression support (with CRC32)
+
+* Mon May 15 2023 Jaroslav Kysela <perex@perex.cz> - 2.2.5-1
 - Update to v2.2.5
 
 * Mon Jan  9 2023 Jaroslav Kysela <perex@perex.cz> - 2.2.4-1
