@@ -4,7 +4,7 @@
 %global _firmwarepath  /usr/lib/firmware
 %global _xz_opts -9 --check=crc32
 
-%global sof_ver 2023.12
+%global sof_ver 2024.03
 #global sof_ver_pre rc1
 %global sof_ver_rel %{?sof_ver_pre:.%{sof_ver_pre}}
 %global sof_ver_pkg0 %{sof_ver}%{?sof_ver_pre:-%{sof_ver_pre}}
@@ -18,13 +18,13 @@
 Summary:        Firmware and topology files for Sound Open Firmware project
 Name:           alsa-sof-firmware
 Version:        %{sof_ver}
-Release:        1%{?sof_ver_rel}%{?dist}
+Release:        6%{?sof_ver_rel}%{?dist}
 # See later in the spec for a breakdown of licensing
 License:        BSD-3-Clause
 URL:            https://github.com/thesofproject/sof-bin
 Source:         https://github.com/thesofproject/sof-bin/releases/download/%{sof_ver_pkg}/sof-bin-%{sof_ver_pkg0}.tar.gz
 %if 0%{?with_sof_addon}
-Source2:        https://github.com/thesofproject/sof-bin/releases/download/v%{sof_ver_addon}/sof-tplg-v%{sof_ver_addon}.tar.gz
+Source3:        https://github.com/thesofproject/sof-bin/releases/download/v%{sof_ver_addon}/sof-tplg-v%{sof_ver_addon}.tar.gz
 %endif
 BuildRequires:  alsa-topology >= %{tplg_version}
 BuildRequires:  alsa-topology-utils >= %{tplg_version}
@@ -49,12 +49,12 @@ This package contains the debug files for the Sound Open Firmware project.
 
 mkdir -p firmware/intel
 
-for d in sof sof-ipc4 sof-ace-tplg sof-tplg; do \
+for d in sof sof-ipc4 sof-ipc4-tplg sof-tplg; do \
   mv "${d}" firmware/intel; \
 done
 
 %if 0%{?with_sof_addon}
-tar xvzf %{SOURCE2}
+tar xvzf %{SOURCE3}
 mv sof-tplg-v%{sof_ver_addon}/*.tplg firmware/intel/sof-tplg
 %endif
 
@@ -79,9 +79,12 @@ for d in sof sof-ipc4; do \
     popd; \
   done
 done
-for d in sof-tplg sof-ace-tplg; do \
+for d in sof-tplg sof-ipc4-tplg; do \
   find -P "firmware/intel/${d}"  -type f -name "*.tplg" -exec xz -z %{_xz_opts} {} \;
 done
+
+mv firmware/intel/sof-ipc4-tplg firmware/intel/sof-ace-tplg
+ln -s sof-ace-tplg firmware/intel/sof-ipc4-tplg
 
 %build
 # SST topology files (not SOF related, but it's a Intel hw support
@@ -122,6 +125,7 @@ cat alsa-sof-firmware.files
 # .. for files with suffix .tplg
 %{_firmwarepath}/intel/sof-tplg/*.tplg.xz
 %{_firmwarepath}/intel/sof-ace-tplg/*.tplg.xz
+%{_firmwarepath}/intel/sof-ipc4-tplg
 
 # Licence: SOF (3-clause BSD plus others)
 # .. for files with suffix .ri
@@ -136,6 +140,10 @@ if st and st.type == "link" then
 end
 
 %changelog
+* Mon Jun 17 2024 Jaroslav Kysela <jkysela@redhat.com> - 2024.03-5
+- Update to v2024.03
+- Add AVS topology files v2024.02
+
 * Wed Dec  20 2023 Jaroslav Kysela <perex@perex.cz> - 2023.12-1
 - Update to v2023.12
 
