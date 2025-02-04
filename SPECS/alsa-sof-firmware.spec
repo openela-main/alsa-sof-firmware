@@ -4,7 +4,7 @@
 %global _firmwarepath  /usr/lib/firmware
 %global _xz_opts -9 --check=crc32
 
-%global sof_ver 2024.03
+%global sof_ver 2024.09
 #global sof_ver_pre rc1
 %global sof_ver_rel %{?sof_ver_pre:.%{sof_ver_pre}}
 %global sof_ver_pkg0 %{sof_ver}%{?sof_ver_pre:-%{sof_ver_pre}}
@@ -18,7 +18,7 @@
 Summary:        Firmware and topology files for Sound Open Firmware project
 Name:           alsa-sof-firmware
 Version:        %{sof_ver}
-Release:        6%{?sof_ver_rel}%{?dist}
+Release:        1%{?sof_ver_rel}%{?dist}
 # See later in the spec for a breakdown of licensing
 License:        BSD-3-Clause
 URL:            https://github.com/thesofproject/sof-bin
@@ -140,6 +140,9 @@ if st and st.type == "link" then
 end
 
 %changelog
+* Mon Oct 14 2024 Jaroslav Kysela <perex@perex.cz> - 2024.09-1
+- Update to v2024.09
+
 * Mon Jun 17 2024 Jaroslav Kysela <jkysela@redhat.com> - 2024.03-5
 - Update to v2024.03
 - Add AVS topology files v2024.02
