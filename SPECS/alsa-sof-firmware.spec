@@ -4,7 +4,7 @@
 %global _firmwarepath  /usr/lib/firmware
 %global _xz_opts -9 --check=crc32
 
-%global sof_ver 2024.09
+%global sof_ver 2024.09.2
 #global sof_ver_pre rc1
 %global sof_ver_rel %{?sof_ver_pre:.%{sof_ver_pre}}
 %global sof_ver_pkg0 %{sof_ver}%{?sof_ver_pre:-%{sof_ver_pre}}
@@ -18,7 +18,7 @@
 Summary:        Firmware and topology files for Sound Open Firmware project
 Name:           alsa-sof-firmware
 Version:        %{sof_ver}
-Release:        1%{?sof_ver_rel}%{?dist}
+Release:        3%{?sof_ver_rel}%{?dist}
 # See later in the spec for a breakdown of licensing
 License:        BSD-3-Clause
 URL:            https://github.com/thesofproject/sof-bin
@@ -49,7 +49,7 @@ This package contains the debug files for the Sound Open Firmware project.
 
 mkdir -p firmware/intel
 
-for d in sof sof-ipc4 sof-ipc4-tplg sof-tplg; do \
+for d in sof sof-ipc4 sof-ipc4-lib sof-ipc4-tplg sof-tplg; do \
   mv "${d}" firmware/intel; \
 done
 
@@ -77,7 +77,21 @@ for d in sof sof-ipc4; do \
     pushd "${n}"; \
     ln -svf "${l}.xz" "${b}.xz"; \
     popd; \
-  done
+  done; \
+done
+for d in sof-ipc4-lib; do \
+  for e in bin llext; do \
+    find -P "firmware/intel/${d}"  -type f -name "*.${e}" -exec xz -z %{_xz_opts} {} \;
+    for f in $(find -P "firmware/intel/${d}" -type l -name "*.${e}"); do \
+      l=$(readlink "${f}"); \
+      n=$(dirname "${f}"); \
+      b=$(basename "${f}"); \
+      rm "${f}"; \
+      pushd "${n}"; \
+      ln -svf "${l}.xz" "${b}.xz"; \
+      popd; \
+    done; \
+  done; \
 done
 for d in sof-tplg sof-ipc4-tplg; do \
   find -P "firmware/intel/${d}"  -type f -name "*.tplg" -exec xz -z %{_xz_opts} {} \;
@@ -104,6 +118,8 @@ FILEDIR=$(pwd)
 pushd %{buildroot}/%{_firmwarepath}
 find -P . -name "*.ri.xz" | sed -e '/^.$/d' >> $FILEDIR/alsa-sof-firmware.files
 #find -P . -name "*.tplg" | sed -e '/^.$/d' >> $FILEDIR/alsa-sof-firmware.files
+find -P . -name "*.llext.xz" | sed -e '/^.$/d' >> $FILEDIR/alsa-sof-firmware.files
+find -P intel/sof-ipc4-lib -name "*.bin.xz" | sed -e '/^.$/d' >> $FILEDIR/alsa-sof-firmware.files
 find -P . -name "*.ldc" | sed -e '/^.$/d' > $FILEDIR/alsa-sof-firmware.debug-files
 find -P . -type d | sed -e '/^.$/d' > $FILEDIR/alsa-sof-firmware.dirs
 popd
@@ -140,6 +156,15 @@ if st and st.type == "link" then
 end
 
 %changelog
+* Wed Dec 18 2024 Jaroslav Kysela <perex@perex.cz> - 2024.09.2-3
+- Add sof-ipc4-lib directory
+
+* Fri Dec  6 2024 Jaroslav Kysela <perex@perex.cz> - 2024.09.2-1
+- Update to v2024.09.2
+
+* Mon Nov 11 2024 Jaroslav Kysela <perex@perex.cz> - 2024.09.1-1
+- Update to v2024.09.1
+
 * Mon Oct 14 2024 Jaroslav Kysela <perex@perex.cz> - 2024.09-1
 - Update to v2024.09
 
