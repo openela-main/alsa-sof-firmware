@@ -1,10 +1,10 @@
-# This is a firmware package, so binaries (which are not run on the host) in
-# the end package are expected.
+# This is a firmware package, so binaries (which are not run on the host)
+# in the end package are expected.
 %define _binaries_in_noarch_packages_terminate_build   0
 %global _firmwarepath  /usr/lib/firmware
 %global _xz_opts -9 --check=crc32
 
-%global sof_ver 2024.09.2
+%global sof_ver 2025.05
 #global sof_ver_pre rc1
 %global sof_ver_rel %{?sof_ver_pre:.%{sof_ver_pre}}
 %global sof_ver_pkg0 %{sof_ver}%{?sof_ver_pre:-%{sof_ver_pre}}
@@ -18,7 +18,7 @@
 Summary:        Firmware and topology files for Sound Open Firmware project
 Name:           alsa-sof-firmware
 Version:        %{sof_ver}
-Release:        2%{?sof_ver_rel}%{?dist}
+Release:        1%{?sof_ver_rel}%{?dist}
 # See later in the spec for a breakdown of licensing
 License:        BSD-3-Clause
 URL:            https://github.com/thesofproject/sof-bin
@@ -158,10 +158,18 @@ path1 = "%{_firmwarepath}/intel/sof-ace-tplg"
 path2 = "%{_firmwarepath}/intel/sof-ipc4-tplg"
 st = posix.stat(path1)
 if st and st.type == "directory" then
+  os.rename(path2, path2 .. ".tmp")
   os.rename(path1, path2)
+  os.rename(path2 .. ".tmp", path1)
 end
 
 %changelog
+* Thu Jun 26 2025 Jaroslav Kysela <perex@perex.cz> - 2025.05-1
+- Update to v2025.05
+
+* Mon Apr 14 2025 Jaroslav Kysela <perex@perex.cz> - 2024.09.2-3
+- fix the pretrans script for symlink swap (sof-ace-tplg <-> sof-ipc4-tplg)
+
 * Wed Dec 18 2024 Jaroslav Kysela <perex@perex.cz> - 2024.09.2-2
 - Add sof-ipc4-lib directory
 
