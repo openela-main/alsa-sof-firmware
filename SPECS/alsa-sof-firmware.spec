@@ -4,7 +4,7 @@
 %global _firmwarepath  /usr/lib/firmware
 %global _xz_opts -9 --check=crc32
 
-%global sof_ver 2025.05
+%global sof_ver 2025.12.2
 #global sof_ver_pre rc1
 %global sof_ver_rel %{?sof_ver_pre:.%{sof_ver_pre}}
 %global sof_ver_pkg0 %{sof_ver}%{?sof_ver_pre:-%{sof_ver_pre}}
@@ -156,6 +156,9 @@ if st and st.type == "link" then
 end
 
 %changelog
+* Tue Jan 27 2026 Jaroslav Kysela <perex@perex.cz> - 2025.12.2-1
+- Update to v2025.12.2
+
 * Thu Jun 26 2025 Jaroslav Kysela <perex@perex.cz> - 2025.05-1
 - Update to v2025.05
 
